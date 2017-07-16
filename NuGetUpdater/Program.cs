@@ -21,14 +21,14 @@ namespace NuGetUpdater
             {
                 var packageReferences = GetPackageReferences(args[0]);
                 FindUpdates(packageReferences).Wait();
+
+                Console.WriteLine();
                 Console.WriteLine("Done");
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex);
             }
-
-            Console.Read();
         }
 
         private static Dictionary<string, int> GetTargetFrameworks()
