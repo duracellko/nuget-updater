@@ -36,7 +36,8 @@ namespace NuGetUpdater
             return new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
             {
                 { ".NETFramework", 0 },
-                { ".NETStandard", 1 }
+                { ".NETStandard", 10 },
+                { "Any", 100 }
             };
         }
 
@@ -107,17 +108,25 @@ namespace NuGetUpdater
             var identity = new PackageIdentity(packageId, version);
             var packageMetadata = await resource.GetMetadataAsync(identity, logger, CancellationToken.None);
 
-            packages[packageMetadata.Identity.Id] = packageMetadata.Identity.Version;
-
-            if (packageMetadata.DependencySets.Any())
+            if (packageMetadata != null)
             {
-                var dependencySet = packageMetadata.DependencySets.Where(d => frameworks.ContainsKey(d.TargetFramework.Framework))
-                    .OrderBy(d => frameworks[d.TargetFramework.Framework]).ThenByDescending(d => d.TargetFramework.Version).First();
+                packages[packageMetadata.Identity.Id] = packageMetadata.Identity.Version;
 
-                foreach (var dependencyPackage in dependencySet.Packages)
+                if (packageMetadata.DependencySets.Any())
                 {
-                    await GetDependencies(dependencyPackage.Id, dependencyPackage.VersionRange.MinVersion, packages, resource, logger, frameworks);
+                    var dependencySet = packageMetadata.DependencySets.Where(d => frameworks.ContainsKey(d.TargetFramework.Framework))
+                        .OrderBy(d => frameworks[d.TargetFramework.Framework]).ThenByDescending(d => d.TargetFramework.Version).First();
+
+                    foreach (var dependencyPackage in dependencySet.Packages)
+                    {
+                        await GetDependencies(dependencyPackage.Id, dependencyPackage.VersionRange.MinVersion, packages, resource, logger, frameworks);
+                    }
                 }
+            }
+            else
+            {
+                Console.WriteLine("[WARN] Package {0} ({1}) not found.", packageId, version);
+                packages.Remove(packageId);
             }
         }
 
